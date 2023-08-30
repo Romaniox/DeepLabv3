@@ -1,42 +1,20 @@
 import torch
 import torch.nn as nn
 import os
-import argparse
+from pathlib import Path
 
 from datasets import get_images, get_dataset, get_data_loaders
 from engine import train, validate
 from model import prepare_model
 from config import *
-from utils import save_model, SaveBestModel, save_plots
-
-
-# parser = argparse.ArgumentParser()
-# parser.add_argument(
-#     '--epochs',
-#     default=10,
-#     help='number of epochs to train for',
-#     type=int
-# )
-# parser.add_argument(
-#     '--lr',
-#     default=0.0001,
-#     help='learning rate for optimizer',
-#     type=float
-# )
-# parser.add_argument(
-#     '--batch',
-#     default=4,
-#     help='batch size for data loader',
-#     type=int
-# )
-# args = parser.parse_args()
-# print(args)
+from utils import save_model, SaveBestModel, save_plots, get_save_path
 
 
 def main():
     # Create a directory with the model name for outputs.
-    out_dir = os.path.join('outputs')
-    out_dir_valid_preds = os.path.join('outputs', 'valid_preds')
+    ROOT = Path().resolve()
+    out_dir = get_save_path(ROOT / 'outputs')
+    out_dir_valid_preds = out_dir / 'valid_preds'
     os.makedirs(out_dir, exist_ok=True)
     os.makedirs(out_dir_valid_preds, exist_ok=True)
 
@@ -52,8 +30,9 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=LR)
     criterion = nn.CrossEntropyLoss()
 
+    dataset_path = ROOT / 'dataset' / 'halfsize'
     train_images, train_masks, valid_images, valid_masks = get_images(
-        root_path=r'D:\SKZ\GEO_AI\deeplabv3\dataset\fullsize'
+        root_path=dataset_path
     )
 
     classes_to_train = ALL_CLASSES
@@ -66,7 +45,7 @@ def main():
         ALL_CLASSES,
         classes_to_train,
         LABEL_COLORS_LIST,
-        img_size=224
+        img_size=IMG_SIZE
     )
 
     train_dataloader, valid_dataloader = get_data_loaders(

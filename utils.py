@@ -3,11 +3,21 @@ import cv2
 import torch
 import os
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 from torchvision import transforms
 from config import LABEL_COLORS_LIST as label_map
 
 plt.style.use('ggplot')
+
+
+def get_save_path(root_path: Path):
+    path_saves = root_path / 'runs'
+    for n in range(0, 9999):
+        # save_path = Path(f'{path_saves}{os.sep}exp{n}')
+        save_path = path_saves / f'exp{n}'
+        if not os.path.exists(save_path):
+            return save_path
 
 
 def set_class_values(all_classes, classes_to_train):

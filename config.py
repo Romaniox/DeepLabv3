@@ -5,6 +5,7 @@ LABEL_COLORS_LIST = [
     (255, 255, 255),  # Waterbody.
 ]
 
-EPOCHS = 10
+IMG_SIZE = 640
+EPOCHS = 100
 LR = 0.0001
 BATCH = 4

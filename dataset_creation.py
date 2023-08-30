@@ -38,20 +38,36 @@ def correct_mask(imgs_path):
         os.remove(img_path)
 
 
+def change_size(imgs_path, size=(640, 640)):
+    # walk through all files in the directory using os.walk
+    for root, dirs, files in os.walk(imgs_path):
+        for file in files:
+            # read the image using cv2
+            img = cv2.imread(os.path.join(root, file))
+            # resize the image to desired size
+            img = cv2.resize(img, size)
+            # save the image with the same name, but different extension
+            cv2.imwrite(os.path.join(root, file), img)
+            print(os.path.join(root, file))
+
+
 def main():
     # src_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\fullsize\train'
     # dst_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\fullsize'
     # train_val_split(src_path, dst_path)
 
-    src_path = r'D:\SKZ\GEO_AI\datasets\aerials\init_'
-    dst_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\fullsize\test'
-    tif2png(src_path, dst_path)
+    # src_path = r'D:\SKZ\GEO_AI\datasets\aerials\init_'
+    # dst_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\fullsize\test'
+    # tif2png(src_path, dst_path)
 
     # img_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\fullsize\val\masks\Sample AI_transparent_mosaic_group1_2_2.jpg'
     # cut_mask(img_path)
 
     # src_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\fullsize\val\masks'
     # correct_mask(src_path)
+
+    src_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\halfsize'
+    change_size(src_path)
 
 
 if __name__ == '__main__':
