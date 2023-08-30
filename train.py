@@ -30,7 +30,7 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=LR)
     criterion = nn.CrossEntropyLoss()
 
-    dataset_path = ROOT / 'dataset' / 'halfsize'
+    dataset_path = ROOT / 'dataset' / 'crops'
     train_images, train_masks, valid_images, valid_masks = get_images(
         root_path=dataset_path
     )

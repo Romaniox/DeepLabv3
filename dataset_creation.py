@@ -3,7 +3,28 @@ import glob
 import shutil
 import cv2
 import numpy as np
+import albumentations as A
 from sklearn.model_selection import train_test_split
+
+
+def add_padding(image: np.ndarray, tile_size: int, overlap: int = 0) -> np.ndarray:
+    h, w = image.shape[:2]
+
+    h_pad = 0
+    w_pad = 0
+    if h % (tile_size - overlap) != 0:
+        h_pad = (tile_size - overlap) - (h % (tile_size - overlap))
+
+    if w % (tile_size - overlap) != 0:
+        w_pad = (tile_size - overlap) - (w % (tile_size - overlap))
+
+    transform = A.Compose([
+        A.PadIfNeeded(min_height=h + h_pad, min_width=w + w_pad, border_mode=cv2.BORDER_CONSTANT, value=0)
+    ])
+
+    image = transform(image=image)['image']
+
+    return image
 
 
 def tif2png(src_path, dst_path):
@@ -14,12 +35,31 @@ def tif2png(src_path, dst_path):
         cv2.imwrite(png_file, img)
 
 
+# def train_val_split(src_path, dst_path):
+#     all_files = glob.glob(os.path.join(src_path, 'images', '*.png'))
+#     train, val = train_test_split(all_files, test_size=0.1)
+#     for file in val:
+#         shutil.move(file, os.path.join(dst_path, 'val', 'images'))
+#         shutil.move(file.replace('images', 'masks'), os.path.join(dst_path, 'val', 'masks'))
+
 def train_val_split(src_path, dst_path):
-    all_files = glob.glob(os.path.join(src_path, 'images', '*.png'))
+    all_files = glob.glob(os.path.join(src_path, 'images', '*'))
     train, val = train_test_split(all_files, test_size=0.1)
+    train_save_path = os.path.join(dst_path, 'train')
+    val_save_path = os.path.join(dst_path, 'val')
+    os.makedirs(train_save_path, exist_ok=True)
+    os.makedirs(val_save_path, exist_ok=True)
+    os.makedirs(os.path.join(train_save_path, 'images'), exist_ok=True)
+    os.makedirs(os.path.join(train_save_path, 'masks'), exist_ok=True)
+    os.makedirs(os.path.join(val_save_path, 'images'), exist_ok=True)
+    os.makedirs(os.path.join(val_save_path, 'masks'), exist_ok=True)
+
+    for file in train:
+        shutil.copy(file, os.path.join(train_save_path, 'images'))
+        shutil.copy(file.replace('images', 'masks'), os.path.join(train_save_path, 'masks'))
     for file in val:
-        shutil.move(file, os.path.join(dst_path, 'val', 'images'))
-        shutil.move(file.replace('images', 'masks'), os.path.join(dst_path, 'val', 'masks'))
+        shutil.copy(file, os.path.join(val_save_path, 'images'))
+        shutil.copy(file.replace('images', 'masks'), os.path.join(val_save_path, 'masks'))
 
 
 def cut_mask(img_path):
@@ -51,10 +91,36 @@ def change_size(imgs_path, size=(640, 640)):
             print(os.path.join(root, file))
 
 
+def create_crops(src_path, dst_path, size=(640, 640)):
+    for root, dirs, files in os.walk(src_path):
+        for file in files:
+            subdir = os.path.relpath(root, src_path)
+
+            save_path = os.path.join(dst_path, subdir)
+            os.makedirs(save_path, exist_ok=True)
+
+            img = cv2.imread(os.path.join(root, file))
+            h, w, _ = img.shape
+            rows, cols = h // size[0], w // size[1]
+            overlap_h = (size[0] * (rows + 1) - h) // rows
+            overlap_w = (size[1] * (cols + 1) - w) // cols
+
+            x, y = 0, 0
+            for i in range(rows + 1):
+                for j in range(cols + 1):
+                    crop = img[y:y + size[0], x:x + size[1]]
+                    crop = add_padding(crop, size[0])
+                    x += size[0] - overlap_w
+                    cv2.imwrite(os.path.join(save_path, file.replace('.png', f'_{i}_{j}.png')), crop)
+                x = 0
+                y += size[1] - overlap_h
+            print(os.path.join(root, file))
+
+
 def main():
-    # src_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\fullsize\train'
-    # dst_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\fullsize'
-    # train_val_split(src_path, dst_path)
+    src_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\crops\all'
+    dst_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\crops'
+    train_val_split(src_path, dst_path)
 
     # src_path = r'D:\SKZ\GEO_AI\datasets\aerials\init_'
     # dst_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\fullsize\test'
@@ -66,8 +132,12 @@ def main():
     # src_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\fullsize\val\masks'
     # correct_mask(src_path)
 
-    src_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\halfsize'
-    change_size(src_path)
+    # src_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\halfsize'
+    # change_size(src_path)
+
+    # src_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\fullsize'
+    # dst_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\crops'
+    # create_crops(src_path, dst_path, size=(1280, 1280))
 
 
 if __name__ == '__main__':
