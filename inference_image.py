@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import cv2
 import os
 from pathlib import Path
@@ -11,8 +12,8 @@ from model import prepare_model
 
 def main():
     ROOT = Path().resolve()
-    imgs_path = ROOT / 'dataset' / 'halfsize' / 'test'
-    outs_dir = ROOT / 'outputs' / 'runs' / 'exp0'
+    imgs_path = ROOT / 'dataset' / 'crops' / 'test' / 'images'
+    outs_dir = ROOT / 'outputs' / 'runs' / 'r50_30082023'
     out_dir = outs_dir / 'inference_results'
     os.makedirs(out_dir, exist_ok=True)
 
@@ -20,7 +21,8 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     model = prepare_model(len(ALL_CLASSES))
-    ckpt = torch.load(outs_dir / 'best_model.pth')
+    model = nn.DataParallel(model)
+    ckpt = torch.load(outs_dir / 'model.pth')
     model.load_state_dict(ckpt['model_state_dict'])
     model.eval().to(device)
 

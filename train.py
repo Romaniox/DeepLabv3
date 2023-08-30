@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import pandas as pd
 import os
 from pathlib import Path
 
@@ -35,7 +36,7 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=LR)
     criterion = nn.CrossEntropyLoss()
 
-    dataset_path = ROOT / 'dataset' / 'crops'
+    dataset_path = ROOT / 'dataset' / 'tmp'
     train_images, train_masks, valid_images, valid_masks = get_images(
         root_path=dataset_path
     )
@@ -57,14 +58,18 @@ def main():
         train_dataset, valid_dataset, batch_size=BATCH
     )
 
+    scheduler = torch.optim.lr_scheduler.StepLR(
+        optimizer, step_size=EPOCHS // 3, gamma=0.1
+    )
+
     # Initialize `SaveBestModel` class.
     save_best_model = SaveBestModel()
 
-    train_loss, train_pix_acc = [], []
-    valid_loss, valid_pix_acc = [], []
+    train_loss, train_metrics_all = [], []
+    valid_loss, valid_metrics_all = [], []
     for epoch in range(EPOCHS):
         print(f"EPOCH: {epoch + 1}")
-        train_epoch_loss, train_epoch_pixacc = train(
+        train_epoch_loss, train_metrics = train(
             model,
             train_dataset,
             train_dataloader,
@@ -73,7 +78,7 @@ def main():
             criterion,
             classes_to_train
         )
-        valid_epoch_loss, valid_epoch_pixacc = validate(
+        valid_epoch_loss, valid_metrics = validate(
             model,
             valid_dataset,
             valid_dataloader,
@@ -86,23 +91,36 @@ def main():
             save_dir=out_dir_valid_preds
         )
         train_loss.append(train_epoch_loss)
-        train_pix_acc.append(train_epoch_pixacc.cpu())
+        train_metrics_all.append(train_metrics)
         valid_loss.append(valid_epoch_loss)
-        valid_pix_acc.append(valid_epoch_pixacc.cpu())
+        valid_metrics_all.append(valid_metrics)
+
+        scheduler.step()
 
         save_best_model(
             valid_epoch_loss, epoch, model, out_dir
         )
 
-        print(f"\nTrain Epoch Loss: {train_epoch_loss:.4f}, Train Epoch PixAcc: {train_epoch_pixacc:.4f}")
-        print(f"\nValid Epoch Loss: {valid_epoch_loss:.4f}, Valid Epoch PixAcc: {valid_epoch_pixacc:.4f}")
+        print(f"\nTrain Epoch Loss: {train_epoch_loss:.4f}, "
+              f"Train Epoch Dice: {train_metrics['dice']:.4f}, "
+              f"Train Epoch IoU: {train_metrics['iou']:.4f}")
+        print(f"\nValid Epoch Loss: {valid_epoch_loss:.4f}, "
+              f"Valid Epoch Dice: {valid_metrics['dice']:.4f}, "
+              f"Valid Epoch IoU: {valid_metrics['iou']:.4f}")
         print('-' * 50)
 
     save_model(EPOCHS, model, optimizer, criterion, out_dir)
     # Save the loss and accuracy plots.
     save_plots(
-        train_pix_acc, valid_pix_acc, train_loss, valid_loss, out_dir
+        train_metrics_all, valid_metrics_all, train_loss, valid_loss, out_dir
     )
+
+    df_train = pd.DataFrame(train_metrics_all)
+    df_valid = pd.DataFrame(valid_metrics_all)
+
+    df_train.to_csv(out_dir / 'train_metrics.csv', index=True, sep=';')
+    df_valid.to_csv(out_dir / 'valid_metrics.csv', index=True, sep=';')
+
     print('TRAINING COMPLETE')
 
 

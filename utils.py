@@ -134,7 +134,44 @@ def save_model(epochs, model, optimizer, criterion, out_dir, name='model'):
     }, os.path.join(out_dir, name + '.pth'))
 
 
-def save_plots(train_acc, valid_acc, train_loss, valid_loss, out_dir):
+def save_plots(train_metrics, valid_metrics, train_loss, valid_loss, out_dir):
+    """
+    Function to save the loss and accuracy plots to disk.
+    """
+    for metric in train_metrics[0].keys():
+        train_metric = [epoch[metric] for epoch in train_metrics]
+        valid_metric = [epoch[metric] for epoch in valid_metrics]
+        plt.figure(figsize=(10, 7))
+        plt.plot(
+            train_metric, color='tab:blue', linestyle='-',
+            label=f'train {metric}'
+        )
+        plt.plot(
+            valid_metric, color='tab:red', linestyle='-',
+            label=f'validataion {metric}'
+        )
+        plt.xlabel('Epochs')
+        plt.ylabel(metric.capitalize())
+        plt.legend()
+        plt.savefig(os.path.join(out_dir, f'{metric}.png'))
+
+    # Loss plots.
+    plt.figure(figsize=(10, 7))
+    plt.plot(
+        train_loss, color='tab:blue', linestyle='-',
+        label='train loss'
+    )
+    plt.plot(
+        valid_loss, color='tab:red', linestyle='-',
+        label='validataion loss'
+    )
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.savefig(os.path.join(out_dir, 'loss.png'))
+
+
+def save_plots_(train_acc, valid_acc, train_loss, valid_loss, out_dir):
     """
     Function to save the loss and accuracy plots to disk.
     """
