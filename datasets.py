@@ -150,7 +150,7 @@ def get_dataset(
 
 
 def get_data_loaders(train_dataset, valid_dataset, batch_size):
-    train_data_loader = DataLoader(train_dataset, batch_size=batch_size)
-    valid_data_loader = DataLoader(valid_dataset, batch_size=batch_size)
+    train_data_loader = DataLoader(train_dataset, batch_size=batch_size, drop_last=True)
+    valid_data_loader = DataLoader(valid_dataset, batch_size=batch_size, drop_last=True)
 
     return train_data_loader, valid_data_loader
