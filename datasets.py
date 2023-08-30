@@ -46,6 +46,7 @@ def train_transforms(img_size):
     train_image_transform = A.Compose([
         A.Resize(img_size, img_size, always_apply=True),
         A.HorizontalFlip(p=0.5),
+        A.VerticalFlip(p=0.5),
         A.RandomBrightnessContrast(p=0.2),
     ])
     return train_image_transform
