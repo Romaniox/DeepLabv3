@@ -24,6 +24,7 @@ def main():
 
     # If multi GPU mode
     if MULTI_GPU_MODE and torch.cuda.device_count() > 1:
+        print(f"Using {torch.cuda.device_count()} GPUs.")
         model = nn.DataParallel(model)
 
     # Total parameters and trainable parameters.
@@ -36,7 +37,7 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=LR)
     criterion = nn.CrossEntropyLoss()
 
-    dataset_path = ROOT / 'dataset' / 'tmp'
+    dataset_path = ROOT / 'dataset' / dataset_name
     train_images, train_masks, valid_images, valid_masks = get_images(
         root_path=dataset_path
     )

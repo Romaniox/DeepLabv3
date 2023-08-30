@@ -5,6 +5,8 @@ LABEL_COLORS_LIST = [
     (255, 255, 255),  # Waterbody.
 ]
 
+dataset_name = 'crops'
+
 IMG_SIZE = 640
 EPOCHS = 100
 LR = 0.0001
