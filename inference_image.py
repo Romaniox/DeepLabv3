@@ -21,7 +21,6 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     model = prepare_model(len(ALL_CLASSES))
-    model = nn.DataParallel(model)
     ckpt = torch.load(outs_dir / 'model.pth')
     model.load_state_dict(ckpt['model_state_dict'])
     model.eval().to(device)

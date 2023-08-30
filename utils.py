@@ -116,9 +116,11 @@ class SaveBestModel:
             self.best_valid_loss = current_valid_loss
             print(f"\nBest validation loss: {self.best_valid_loss}")
             print(f"\nSaving best model for epoch: {epoch + 1}\n")
+            state_dict = model.state_dict()
+            state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
             torch.save({
                 'epoch': epoch + 1,
-                'model_state_dict': model.state_dict(),
+                'model_state_dict': state_dict,
             }, os.path.join(out_dir, 'best_' + name + '.pth'))
 
 
@@ -126,9 +128,11 @@ def save_model(epochs, model, optimizer, criterion, out_dir, name='model'):
     """
     Function to save the trained model to disk.
     """
+    state_dict = model.state_dict()
+    state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
     torch.save({
         'epoch': epochs,
-        'model_state_dict': model.state_dict(),
+        'model_state_dict': state_dict,
         'optimizer_state_dict': optimizer.state_dict(),
         'loss': criterion,
     }, os.path.join(out_dir, name + '.pth'))

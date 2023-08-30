@@ -117,9 +117,12 @@ def main():
 
     df_train = pd.DataFrame(train_metrics_all)
     df_valid = pd.DataFrame(valid_metrics_all)
+    df_loss = pd.DataFrame({'train_loss': train_loss, 'valid_loss': valid_loss})
 
     df_train.to_csv(out_dir / 'train_metrics.csv', index=True, sep=';')
     df_valid.to_csv(out_dir / 'valid_metrics.csv', index=True, sep=';')
+    df_loss.to_csv(out_dir / 'loss.csv', index=True, sep=';')
+
 
     print('TRAINING COMPLETE')
 
