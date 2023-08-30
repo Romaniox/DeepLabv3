@@ -20,6 +20,11 @@ def main():
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model = prepare_model(num_classes=len(ALL_CLASSES)).to(device)
+
+    # If multi GPU mode
+    if MULTI_GPU_MODE and torch.cuda.device_count() > 1:
+        model = nn.DataParallel(model)
+
     # Total parameters and trainable parameters.
     total_params = sum(p.numel() for p in model.parameters())
     print(f"{total_params:,} total parameters.")
