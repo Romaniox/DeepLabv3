@@ -229,6 +229,7 @@ def get_segment_labels(image, model, device):
 
 def draw_segmentation_map(outputs):
     labels = torch.argmax(outputs.squeeze(), dim=0).detach().cpu().numpy()
+    mask = (labels * 255).astype(np.uint8)
 
     # create Numpy arrays containing zeros
     # later to be used to fill them with respective red, green, and blue pixels
@@ -243,7 +244,7 @@ def draw_segmentation_map(outputs):
         blue_map[index] = np.array(label_map)[label_num, 2]
 
     segmentation_map = np.stack([red_map, green_map, blue_map], axis=2)
-    return segmentation_map
+    return segmentation_map, mask
 
 
 def image_overlay(image, segmented_image):

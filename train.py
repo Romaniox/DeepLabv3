@@ -60,7 +60,7 @@ def main():
     )
 
     scheduler = torch.optim.lr_scheduler.StepLR(
-        optimizer, step_size=EPOCHS // 3, gamma=0.1
+        optimizer, step_size=0.8 * EPOCHS, gamma=0.1
     )
 
     # Initialize `SaveBestModel` class.
@@ -123,7 +123,6 @@ def main():
     df_train.to_csv(out_dir / 'train_metrics.csv', index=True, sep=';')
     df_valid.to_csv(out_dir / 'valid_metrics.csv', index=True, sep=';')
     df_loss.to_csv(out_dir / 'loss.csv', index=True, sep=';')
-
 
     print('TRAINING COMPLETE')
 
