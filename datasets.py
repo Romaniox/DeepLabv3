@@ -15,9 +15,9 @@ def get_images(root_path):
     train_images.sort()
     train_masks = glob.glob(os.path.join(root_path, 'train', 'masks', '*'))
     train_masks.sort()
-    valid_images = glob.glob(os.path.join(root_path, 'val', 'images', '*'))
+    valid_images = glob.glob(os.path.join(root_path, 'train', 'images', '*'))
     valid_images.sort()
-    valid_masks = glob.glob(os.path.join(root_path, 'val', 'masks', '*'))
+    valid_masks = glob.glob(os.path.join(root_path, 'train', 'masks', '*'))
     valid_masks.sort()
 
     return train_images, train_masks, valid_images, valid_masks
@@ -37,6 +37,20 @@ def normalize():
     return transform
 
 
+def denormalize():
+    """
+    Transform to denormalize image.
+    """
+    transform = A.Compose([
+        A.Normalize(
+            mean=[-0.45734706, -0.43338275, -0.40058118],
+            std=[1 / 0.23965294, 1 / 0.23532275, 1 / 0.2398498],
+            always_apply=True
+        )
+    ])
+    return transform
+
+
 def train_transforms(img_size):
     """
     Transforms/augmentations for training images and masks.
@@ -44,10 +58,11 @@ def train_transforms(img_size):
     :param img_size: Integer, for image resize.
     """
     train_image_transform = A.Compose([
+        A.RandomCrop(img_size * 2, img_size * 2, always_apply=True),
         A.Resize(img_size, img_size, always_apply=True),
-        A.HorizontalFlip(p=0.5),
-        A.VerticalFlip(p=0.5),
-        A.RandomBrightnessContrast(p=0.2),
+        A.HorizontalFlip(p=0.0),
+        A.VerticalFlip(p=0.0),
+        A.RandomBrightnessContrast(p=0.0),
     ])
     return train_image_transform
 

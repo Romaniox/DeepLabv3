@@ -37,7 +37,7 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=LR)
     criterion = nn.CrossEntropyLoss()
 
-    dataset_path = ROOT / 'dataset' / dataset_name
+    dataset_path = ROOT / 'dataset_roads_aerial' / dataset_name
     train_images, train_masks, valid_images, valid_masks = get_images(
         root_path=dataset_path
     )
