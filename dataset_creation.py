@@ -290,7 +290,7 @@ def main():
     test_masks = [tiles_masks[i] for i in test_idx]
 
     train_save_path = os.path.join(save_path, 'train')
-    test_save_path = os.path.join(save_path, 'test')
+    test_save_path = os.path.join(save_path, 'val')
 
     os.makedirs(train_save_path, exist_ok=True)
     os.makedirs(test_save_path, exist_ok=True)

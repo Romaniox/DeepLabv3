@@ -15,9 +15,9 @@ def get_images(root_path):
     train_images.sort()
     train_masks = glob.glob(os.path.join(root_path, 'train', 'masks', '*'))
     train_masks.sort()
-    valid_images = glob.glob(os.path.join(root_path, 'train', 'images', '*'))
+    valid_images = glob.glob(os.path.join(root_path, 'val', 'images', '*'))
     valid_images.sort()
-    valid_masks = glob.glob(os.path.join(root_path, 'train', 'masks', '*'))
+    valid_masks = glob.glob(os.path.join(root_path, 'val', 'masks', '*'))
     valid_masks.sort()
 
     return train_images, train_masks, valid_images, valid_masks
