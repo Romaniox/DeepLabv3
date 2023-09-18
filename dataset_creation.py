@@ -252,10 +252,13 @@ def main():
     masks_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\all\masks_roads_tracks'
     save_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\180923_roads&track'
 
+    os.makedirs(masks_path, exist_ok=True)
+    os.makedirs(save_path, exist_ok=True)
+
     for img_name in os.listdir(imgs_path):
         print(img_name)
-        if img_name == '3859.png':
-            continue
+        # if img_name == '3859.png':
+        #     continue
 
         annot_path = os.path.join(annots_path, img_name[:-4] + '.json')
 
@@ -276,25 +279,41 @@ def main():
         tiles = cvt.tiles_creation.get_tiles(mask, (3000, 3000), 1000)
         tiles_masks.extend(tiles)
 
-    images_save_path = os.path.join(save_path, 'images')
-    masks_save_path = os.path.join(save_path, 'masks')
+    indexes = np.arange(len(tiles_imgs))
 
-    for i, (tile_img, tile_mask) in enumerate(zip(tiles_imgs, tiles_masks)):
+    train_idx, test_idx = train_test_split(indexes, test_size=0.1, random_state=42)
+
+    train_imgs = [tiles_imgs[i] for i in train_idx]
+    train_masks = [tiles_masks[i] for i in train_idx]
+
+    test_imgs = [tiles_imgs[i] for i in test_idx]
+    test_masks = [tiles_masks[i] for i in test_idx]
+
+    train_save_path = os.path.join(save_path, 'train')
+    test_save_path = os.path.join(save_path, 'test')
+
+    os.makedirs(train_save_path, exist_ok=True)
+    os.makedirs(test_save_path, exist_ok=True)
+
+    images_save_path = os.path.join(train_save_path, 'images')
+    masks_save_path = os.path.join(train_save_path, 'masks')
+
+    os.makedirs(images_save_path, exist_ok=True)
+    os.makedirs(masks_save_path, exist_ok=True)
+
+    for i, (tile_img, tile_mask) in enumerate(zip(train_imgs, train_masks)):
         cv2.imwrite(os.path.join(images_save_path, f'{i}.png'), tile_img)
         cv2.imwrite(os.path.join(masks_save_path, f'{i}.png'), tile_mask)
 
-    # src_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\180923_roads&track'
-    #
-    # for img_name in os.listdir(src_path):
-    #     if img_name.endswith('img.png'):
-    #         img_path_old = os.path.join(src_path, img_name)
-    #         img_path_new = os.path.join(src_path, 'images', img_name.replace('_img', ''))
-    #         shutil.move(img_path_old, img_path_new)
-    #
-    #     elif img_name.endswith('mask.png'):
-    #         img_path_old = os.path.join(src_path, img_name)
-    #         img_path_new = os.path.join(src_path, 'masks', img_name.replace('_mask', ''))
-    #         shutil.move(img_path_old, img_path_new)
+    images_save_path = os.path.join(test_save_path, 'images')
+    masks_save_path = os.path.join(test_save_path, 'masks')
+
+    os.makedirs(images_save_path, exist_ok=True)
+    os.makedirs(masks_save_path, exist_ok=True)
+
+    for i, (tile_img, tile_mask) in enumerate(zip(test_imgs, test_masks)):
+        cv2.imwrite(os.path.join(images_save_path, f'{i}.png'), tile_img)
+        cv2.imwrite(os.path.join(masks_save_path, f'{i}.png'), tile_mask)
 
 
 if __name__ == '__main__':
