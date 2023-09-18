@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import cv2
+import numpy as np
 import os
 from pathlib import Path
 
@@ -11,10 +12,16 @@ from model import prepare_model
 
 
 def main():
-    ROOT = Path().resolve()
-    imgs_path = ROOT / 'dataset' / 'crops' / 'test' / 'images'
-    outs_dir = ROOT / 'outputs' / 'runs' / 'r50_30082023'
-    out_dir = outs_dir / 'inference_results'
+    ROOT = Path().resolve()  # D:\SKZ\GEO_AI\deeplabv3
+    # imgs_path = ROOT / 'dataset' / 'crops' / 'test' / 'images'
+    imgs_path = r'D:\SKZ\GEO_AI\datasets\aerials\tiles\3860'
+    outs_dir = ROOT / 'outputs' / 'runs' / 'r50_31082023'
+    # out_dir = outs_dir / 'inference_results'
+    # mask_dir = out_dir / 'masks'
+    mask_dir = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\3860\masks'
+    out_dir = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\3860\segments'
+
+    os.makedirs(mask_dir, exist_ok=True)
     os.makedirs(out_dir, exist_ok=True)
 
     # Set computation device.
@@ -31,20 +38,27 @@ def main():
         # Read the image.
         image = Image.open(os.path.join(imgs_path, image_path))
 
+        img = np.array(image)
+
+        # RGBA to RGB
+        if image.mode == 'RGBA':
+            image = image.convert('RGB')
+
         # Resize very large images (if width > 1024.) to avoid OOM on GPUs.
-        if image.size[0] > 1024:
-            image = image.resize((800, 800))
+        if image.size[0] > 1280:
+            image = image.resize((1280, 1280))
 
         # Do forward pass and get the output dictionary.
         outputs = get_segment_labels(image, model, device)
         # Get the data from the `out` key.
         outputs = outputs['out']
-        segmented_image = draw_segmentation_map(outputs)
+        segmented_image, mask = draw_segmentation_map(outputs)
 
         final_image = image_overlay(image, segmented_image)
-        cv2.imshow('Segmented image', final_image)
-        cv2.waitKey(1)
+        # cv2.imshow('Segmented image', final_image)
+        # cv2.waitKey(1)
         cv2.imwrite(os.path.join(out_dir, image_path), final_image)
+        cv2.imwrite(os.path.join(mask_dir, image_path), mask)
 
 
 if __name__ == '__main__':

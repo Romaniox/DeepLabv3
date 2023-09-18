@@ -60,9 +60,11 @@ def train_transforms(img_size):
     train_image_transform = A.Compose([
         A.RandomCrop(img_size * 2, img_size * 2, always_apply=True),
         A.Resize(img_size, img_size, always_apply=True),
-        A.HorizontalFlip(p=0.0),
-        A.VerticalFlip(p=0.0),
-        A.RandomBrightnessContrast(p=0.0),
+        A.HorizontalFlip(p=0.5),
+        A.VerticalFlip(p=0.5),
+        A.RandomBrightnessContrast(p=0.25),
+        A.GaussNoise(p=0.25),
+
     ])
     return train_image_transform
 
@@ -110,14 +112,23 @@ class SegmentationDataset(Dataset):
         mask = np.array(Image.open(self.mask_paths[index]).convert('RGB'))
 
         # Make any pixel value above 200 as 255 for waterbody.
-        im = mask >= 200
-        mask[im] = 255
-        mask[np.logical_not(im)] = 0
+        # im = mask >= 200
+        # mask[im] = 255
+        # mask[np.logical_not(im)] = 0
 
-        image = self.norm_tfms(image=image)['image']
         transformed = self.tfms(image=image, mask=mask)
+
         image = transformed['image']
         mask = transformed['mask']
+
+        if mask.max() != 0:
+            pass
+
+
+        # cv2.imwrite('image.png', cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+        # cv2.imwrite('mask.png', mask)
+
+        image = self.norm_tfms(image=image)['image']
 
         # Get colored label mask.
         mask = get_label_mask(mask, self.class_values, self.label_colors_list)

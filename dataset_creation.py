@@ -5,42 +5,23 @@ import cv2
 import numpy as np
 import albumentations as A
 from sklearn.model_selection import train_test_split
-
-
-def add_padding(image: np.ndarray, tile_size: int, overlap: int = 0) -> np.ndarray:
-    h, w = image.shape[:2]
-
-    h_pad = 0
-    w_pad = 0
-    if h % (tile_size - overlap) != 0:
-        h_pad = (tile_size - overlap) - (h % (tile_size - overlap))
-
-    if w % (tile_size - overlap) != 0:
-        w_pad = (tile_size - overlap) - (w % (tile_size - overlap))
-
-    transform = A.Compose([
-        A.PadIfNeeded(min_height=h + h_pad, min_width=w + w_pad, border_mode=cv2.BORDER_CONSTANT, value=0)
-    ])
-
-    image = transform(image=image)['image']
-
-    return image
+import cv_tools as cvt
+from natsort import natsorted
 
 
 def tif2png(src_path, dst_path):
+    img = cv2.imread(src_path, cv2.IMREAD_UNCHANGED)
+    img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
+    cv2.imwrite(dst_path, img)
+
+
+def tif2png_dir(src_path, dst_path):
     for tif_file in glob.glob(os.path.join(src_path, '*.tif')):
         png_file = os.path.join(dst_path, os.path.basename(tif_file).replace('.tif', '.png'))
         img = cv2.imread(tif_file, cv2.IMREAD_UNCHANGED)
         img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
         cv2.imwrite(png_file, img)
 
-
-# def train_val_split(src_path, dst_path):
-#     all_files = glob.glob(os.path.join(src_path, 'images', '*.png'))
-#     train, val = train_test_split(all_files, test_size=0.1)
-#     for file in val:
-#         shutil.move(file, os.path.join(dst_path, 'val', 'images'))
-#         shutil.move(file.replace('images', 'masks'), os.path.join(dst_path, 'val', 'masks'))
 
 def train_val_split(src_path, dst_path):
     all_files = glob.glob(os.path.join(src_path, 'images', '*'))
@@ -117,13 +98,59 @@ def create_crops(src_path, dst_path, size=(640, 640)):
             print(os.path.join(root, file))
 
 
-def main():
-    src_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\crops\all'
-    dst_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\crops'
-    train_val_split(src_path, dst_path)
+def merge_crops(src_path, dst_path, size=(10000, 10000)):
+    dir_name = os.path.basename(src_path)
 
-    # src_path = r'D:\SKZ\GEO_AI\datasets\aerials\init_'
-    # dst_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\fullsize\test'
+    res_img = np.zeros((size[0], size[1], 3), dtype=np.uint8)
+    crop_list = os.listdir(src_path)
+    crop = cv2.imread(os.path.join(src_path, crop_list[0]))
+    h, w, _ = crop.shape
+    rows, cols = size[0] // h, size[1] // w
+    overlap_h = (h * (rows + 1) - size[0]) // rows
+    overlap_w = (w * (cols + 1) - size[1]) // cols
+
+    x, y = 0, 0
+    count = 0
+    for crop_name in crop_list:
+        crop = cv2.imread(os.path.join(src_path, crop_name))
+        h, w, _ = crop.shape
+        if x + w > size[1]:
+            crop = crop[:, 0:size[1] - x]
+            h, w, _ = crop.shape
+
+        if y + h > size[0]:
+            crop = crop[0:size[0] - y, :, :]
+            h, w, _ = crop.shape
+
+        res_img[y:y + h, x:x + w, :] = crop
+        x += w - overlap_w
+        print(count)
+        count += 1
+        if count % (cols + 1) == 0:
+            x = 0
+            y += h - overlap_h
+
+    cv2.imwrite(os.path.join(dst_path, f'{dir_name}.png'), res_img)
+
+
+def get_tiles(src_path, dst_path, size=(640, 640)):
+    img = cv2.imread(src_path)
+    tiles = cvt.tiles_creation.get_tiles(img, size)
+
+    for i, tile in enumerate(tiles):
+        cv2.imwrite(os.path.join(dst_path, f'{i}.png'), tile)
+
+
+# def img2squares(src_path, dst_path, size=(640, 640)):
+
+
+def main():
+    # src_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\crops\all'
+    # dst_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\crops'
+    # train_val_split(src_path, dst_path)
+
+    # src_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\new\train\images'
+    # dst_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\new\train\images'
     # tif2png(src_path, dst_path)
 
     # img_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\fullsize\val\masks\Sample AI_transparent_mosaic_group1_2_2.jpg'
@@ -138,6 +165,136 @@ def main():
     # src_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\fullsize'
     # dst_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\crops'
     # create_crops(src_path, dst_path, size=(1280, 1280))
+
+    # src_path = r'D:\SKZ\GEO_AI\deeplabv3\outputs\runs\r50_31082023\inference_results\masks\3859'
+    # dst_path = r'D:\SKZ\GEO_AI\deeplabv3\outputs\runs\r50_31082023\inference_results\masks'
+    # merge_crops(src_path, dst_path, size=(10000, 10000))
+
+    # src_path = r'D:\SKZ\GEO_AI\deeplabv3\road_classif\rgb_trans.jpg'
+    # dst_path = r'D:\SKZ\GEO_AI\deeplabv3\road_classif\tiles'
+    # get_tiles(src_path, dst_path, size=(6500, 6500))
+
+    # masks_path = r'D:\SKZ\GEO_AI\deeplabv3\road_classif\masks'
+    # rgb_path = r'D:\SKZ\GEO_AI\deeplabv3\road_classif\rgb_trans_mask.jpg'
+    #
+    # # rgb = cv2.imread(r'D:\SKZ\GEO_AI\deeplabv3\road_classif\rgb_trans.jpg')
+    # # size = rgb.shape[:2]
+    # size = (13000, 52000)
+    # tiles = []
+    # masks_list = natsorted(os.listdir(masks_path))
+    # for mask_name in masks_list:
+    #     mask = cv2.imread(os.path.join(masks_path, mask_name))
+    #     mask = cv2.resize(mask, (6500, 6500))
+    #     tiles.append(mask)
+    #
+    # rgb_trans_mask = cvt.tiles_creation.merge_tiles(tiles, size)
+    #
+    # cv2.imwrite(rgb_path, rgb_trans_mask)
+
+    # img = cv2.imread(r'D:\SKZ\GEO_AI\deeplabv3\road_classif\rgb_trans.jpg')
+    # size = img.shape[:2]
+    #
+    # mask = cv2.imread(r'D:\SKZ\GEO_AI\deeplabv3\road_classif\rgb_trans_mask.jpg')
+    #
+    # mask_unpad = cvt.image_transform.remove_padding(mask, size)
+    # cv2.imwrite(r'D:\SKZ\GEO_AI\deeplabv3\road_classif\rgb_trans_mask_.jpg', mask_unpad)
+
+    # mask = cv2.imread(r'D:\SKZ\GEO_AI\deeplabv3\road_classif\rgb_trans_mask.jpg')
+    # mask_ = mask[:, :-1]
+    # cv2.imwrite(r'D:\SKZ\GEO_AI\deeplabv3\road_classif\rgb_trans_mask.jpg', mask_)
+
+    # img = cv2.imread(r'D:\SKZ\GEO_AI\deeplabv3\road_classif\rgb_trans.jpg')
+    # mask = cv2.imread(r'D:\SKZ\GEO_AI\deeplabv3\road_classif\rgb_trans_mask.jpg')
+    #
+    # road = cvt.draw.cut_mask(img, mask)
+    # cv2.imwrite(r'D:\SKZ\GEO_AI\deeplabv3\road_classif\road.jpg', road)
+
+    # mask = cvt.coco_functions.get_masks(r'D:\SKZ\GEO_AI\datasets\aerials\annot\instances_default_True.json', ['trees_field', 'roads'], img_name='True_1259.tif')
+    # cv2.imwrite(r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\all\masks_roads_treesfields\True_1259.png', mask)
+
+    # imgs_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\all\masks_roads_treesfields'
+
+    # dst_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\other\images\3860.png'
+    # img_path = r'D:\SKZ\GEO_AI\datasets\aerials\init\3860.tif'
+    # tif2png(img_path, dst_path)
+
+    # imgs_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\other\images_ful'
+    # dst_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\other\images'
+
+    # for img_name in os.listdir(imgs_path):
+    #     img_path = os.path.join(imgs_path, img_name)
+    #     img = cv2.imread(img_path)
+    #     tiles = cvt.tiles_creation.get_tiles(img, (1280, 1280), 0)
+    #     for i, tile in enumerate(tiles):
+    #         cv2.imwrite(os.path.join(dst_path, img_name[:-4]+f'_{i}.png'), tile)
+
+    # imgs_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\other\images'
+    # masks_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\other\masks'
+    # dst_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\other\cuts'
+    #
+    # for img_name in os.listdir(imgs_path):
+    #     img = cv2.imread(os.path.join(imgs_path, img_name))
+    #     mask = cv2.imread(os.path.join(masks_path, img_name))
+    #     res = cvt.draw.cut_mask(img, mask)
+    #
+    #     cv2.imwrite(os.path.join(dst_path, img_name), res)
+
+    # img = cv2.imread(r'D:\SKZ\GEO_AI\deeplabv3\dataset\new\train\mask\3859.png')
+    # dst_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset\new\crops\mask'
+    # tiles = cvt.tiles_creation.get_tiles(img, (1280, 1280), 256)
+    #
+    # for i, tile in enumerate(tiles):
+    #     cv2.imwrite(os.path.join(dst_path, f'{i}.png'), tile)
+
+    # create masks from COCO
+    imgs_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\all\images'
+    annots_path = r'D:\SKZ\GEO_AI\datasets\aerials\annotation_all'
+    masks_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\all\masks_roads_tracks'
+    save_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\180923_roads&track'
+
+    for img_name in os.listdir(imgs_path):
+        print(img_name)
+        if img_name == '3859.png':
+            continue
+
+        annot_path = os.path.join(annots_path, img_name[:-4] + '.json')
+
+        mask = cvt.coco_functions.get_masks(annot_path, ['tracks', 'roads'], img_name=img_name)
+        cv2.imwrite(os.path.join(masks_path, img_name[:-4] + '.png'), mask)
+
+    tiles_imgs = []
+    tiles_masks = []
+
+    for img_name in os.listdir(imgs_path):
+        img_path = os.path.join(imgs_path, img_name)
+        img = cv2.imread(img_path)
+        tiles = cvt.tiles_creation.get_tiles(img, (3000, 3000), 1000)
+        tiles_imgs.extend(tiles)
+
+        mask_path = os.path.join(masks_path, img_name[:-4] + '.png')
+        mask = cv2.imread(mask_path)
+        tiles = cvt.tiles_creation.get_tiles(mask, (3000, 3000), 1000)
+        tiles_masks.extend(tiles)
+
+    images_save_path = os.path.join(save_path, 'images')
+    masks_save_path = os.path.join(save_path, 'masks')
+
+    for i, (tile_img, tile_mask) in enumerate(zip(tiles_imgs, tiles_masks)):
+        cv2.imwrite(os.path.join(images_save_path, f'{i}.png'), tile_img)
+        cv2.imwrite(os.path.join(masks_save_path, f'{i}.png'), tile_mask)
+
+    # src_path = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\180923_roads&track'
+    #
+    # for img_name in os.listdir(src_path):
+    #     if img_name.endswith('img.png'):
+    #         img_path_old = os.path.join(src_path, img_name)
+    #         img_path_new = os.path.join(src_path, 'images', img_name.replace('_img', ''))
+    #         shutil.move(img_path_old, img_path_new)
+    #
+    #     elif img_name.endswith('mask.png'):
+    #         img_path_old = os.path.join(src_path, img_name)
+    #         img_path_new = os.path.join(src_path, 'masks', img_name.replace('_mask', ''))
+    #         shutil.move(img_path_old, img_path_new)
 
 
 if __name__ == '__main__':

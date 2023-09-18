@@ -13,16 +13,16 @@ def pix_acc(target, outputs, num_classes):
     return labeled, correct
 
 
-def get_tp_tn_fp_fn(target, outputs):
+def get_tp_tn_fp_fn(target, outputs, class_num):
     _, preds = torch.max(outputs.data, 1)
 
     preds = preds.cpu().numpy()
     target = target.cpu().numpy()
 
-    TP = np.sum(np.logical_and(preds == 1, target == 1))
-    TN = np.sum(np.logical_and(preds == 0, target == 0))
-    FP = np.sum(np.logical_and(preds == 1, target == 0))
-    FN = np.sum(np.logical_and(preds == 0, target == 1))
+    TP = np.sum(np.logical_and(preds == class_num, target == class_num))
+    TN = np.sum(np.logical_and(preds != class_num, target != class_num))
+    FP = np.sum(np.logical_and(preds == class_num, target != class_num))
+    FN = np.sum(np.logical_and(preds != class_num, target == class_num))
 
     return TP, TN, FP, FN
 
