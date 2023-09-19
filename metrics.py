@@ -28,9 +28,9 @@ def get_tp_tn_fp_fn(target, outputs, class_num):
 
 
 def get_metrics(TP, TN, FP, FN):
-    iou = TP / (TP + FP + FN)
-    dice = 2 * TP / (2 * TP + FP + FN)
-    precision = TP / (TP + FP)
+    iou = TP / (np.spacing(1) + TP + FP + FN)
+    dice = 2 * TP / (np.spacing(1) + 2 * TP + FP + FN)
+    precision = TP / (np.spacing(1) + TP + FP)
     recall = TP / (np.spacing(1) + TP + FN)
 
     return iou, dice, precision, recall
