@@ -159,7 +159,7 @@ def validate(
     ##### PER EPOCH METRICS ######
     # Pixel accuracy
     # pixel_acc = ((1.0 * train_running_correct) / (np.spacing(1) + train_running_label)) * 100
-    iou, dice, precision, recall = get_metrics(tps, tns, fps, fns)
+    iou, dice, precision, recall = map(lambda x: x / counter, [iou_g, dice_g, precision_g, recall_g])
     metrics = {'iou': iou, 'dice': dice, 'precision': precision, 'recall': recall}
     ##############################
 
