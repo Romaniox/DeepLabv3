@@ -252,6 +252,12 @@ def image_overlay(image, segmented_image):
     beta = 0.5  # transparency for the segmentation map
     gamma = 0  # scalar added to each sum
 
+    # change white pixels of the segmentation map to blue
+    red_mask = np.all(segmented_image == [255, 255, 255], axis=-1)
+    blue_mask = np.all(segmented_image == [127, 127, 127], axis=-1)
+    segmented_image[red_mask] = [255, 0, 0]
+    segmented_image[blue_mask] = [0, 0, 255]
+
     segmented_image = cv2.cvtColor(segmented_image, cv2.COLOR_RGB2BGR)
     image = np.array(image)
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)

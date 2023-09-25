@@ -14,12 +14,12 @@ from model import prepare_model
 def main():
     ROOT = Path().resolve()  # D:\SKZ\GEO_AI\deeplabv3
     # imgs_path = ROOT / 'dataset' / 'crops' / 'test' / 'images'
-    imgs_path = r'D:\SKZ\GEO_AI\datasets\aerials\tiles\3860'
-    outs_dir = ROOT / 'outputs' / 'runs' / 'r50_31082023'
+    imgs_path = r'D:\SKZ\GEO_AI\deeplabv3\data2009\crops'
+    outs_dir = ROOT / 'outputs' / 'runs' / 'r100_190923'
     # out_dir = outs_dir / 'inference_results'
     # mask_dir = out_dir / 'masks'
-    mask_dir = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\3860\masks'
-    out_dir = r'D:\SKZ\GEO_AI\deeplabv3\dataset_roads_aerial\3860\segments'
+    mask_dir = r'D:\SKZ\GEO_AI\deeplabv3\res2009\masks'
+    out_dir = r'D:\SKZ\GEO_AI\deeplabv3\res2009\segments'
 
     os.makedirs(mask_dir, exist_ok=True)
     os.makedirs(out_dir, exist_ok=True)
@@ -38,8 +38,6 @@ def main():
         # Read the image.
         image = Image.open(os.path.join(imgs_path, image_path))
 
-        img = np.array(image)
-
         # RGBA to RGB
         if image.mode == 'RGBA':
             image = image.convert('RGB')
@@ -53,10 +51,8 @@ def main():
         # Get the data from the `out` key.
         outputs = outputs['out']
         segmented_image, mask = draw_segmentation_map(outputs)
-
         final_image = image_overlay(image, segmented_image)
-        # cv2.imshow('Segmented image', final_image)
-        # cv2.waitKey(1)
+
         cv2.imwrite(os.path.join(out_dir, image_path), final_image)
         cv2.imwrite(os.path.join(mask_dir, image_path), mask)
 

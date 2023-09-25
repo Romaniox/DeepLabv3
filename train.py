@@ -3,11 +3,12 @@ import torch.nn as nn
 import pandas as pd
 import os
 from pathlib import Path
+import wandb
 
 from datasets import get_images, get_dataset, get_data_loaders
 from engine import train, validate
 from model import prepare_model
-from config import *
+import config_360 as config
 from utils import save_model, SaveBestModel, save_plots, get_save_path
 
 
@@ -20,12 +21,16 @@ def main():
     os.makedirs(out_dir_valid_preds, exist_ok=True)
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    model = prepare_model(num_classes=len(ALL_CLASSES)).to(device)
+    model = prepare_model(num_classes=len(config.ALL_CLASSES), model_name=config.MODEL).to(device)
 
     # If multi GPU mode
-    if MULTI_GPU_MODE and torch.cuda.device_count() > 1:
+    if config.MULTI_GPU_MODE and torch.cuda.device_count() > 1:
         print(f"Using {torch.cuda.device_count()} GPUs.")
         model = nn.DataParallel(model)
+
+    # init wandb
+    wandb.init(project="deeplab")
+
 
     # Total parameters and trainable parameters.
     total_params = sum(p.numel() for p in model.parameters())
@@ -34,33 +39,33 @@ def main():
         p.numel() for p in model.parameters() if p.requires_grad)
     print(f"{total_trainable_params:,} training parameters.")
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+    optimizer = torch.optim.Adam(model.parameters(), lr=config.LR)
     criterion = nn.CrossEntropyLoss()
 
-    dataset_path = ROOT / 'dataset_roads_aerial' / dataset_name
+    dataset_path = ROOT / config.dataset_name
     train_images, train_masks, valid_images, valid_masks = get_images(
         root_path=dataset_path
     )
 
-    classes_to_train = ALL_CLASSES
+    classes_to_train = config.ALL_CLASSES
 
     train_dataset, valid_dataset = get_dataset(
         train_images,
         train_masks,
         valid_images,
         valid_masks,
-        ALL_CLASSES,
+        config.ALL_CLASSES,
         classes_to_train,
-        LABEL_COLORS_LIST,
-        img_size=IMG_SIZE
+        config.LABEL_COLORS_LIST,
+        img_size=config.IMG_SIZE
     )
 
     train_dataloader, valid_dataloader = get_data_loaders(
-        train_dataset, valid_dataset, batch_size=BATCH
+        train_dataset, valid_dataset, batch_size=config.BATCH
     )
 
     scheduler = torch.optim.lr_scheduler.StepLR(
-        optimizer, step_size=0.8 * EPOCHS, gamma=0.1
+        optimizer, step_size=0.8 * config.EPOCHS, gamma=0.1
     )
 
     # Initialize `SaveBestModel` class.
@@ -68,7 +73,7 @@ def main():
 
     train_loss, train_metrics_all = [], []
     valid_loss, valid_metrics_all = [], []
-    for epoch in range(EPOCHS):
+    for epoch in range(config.EPOCHS):
         print(f"EPOCH: {epoch + 1}")
         train_epoch_loss, train_metrics = train(
             model,
@@ -86,9 +91,9 @@ def main():
             device,
             criterion,
             classes_to_train,
-            LABEL_COLORS_LIST,
+            config.LABEL_COLORS_LIST,
             epoch,
-            ALL_CLASSES,
+            config.ALL_CLASSES,
             save_dir=out_dir_valid_preds
         )
         train_loss.append(train_epoch_loss)
@@ -110,7 +115,16 @@ def main():
               f"Valid Epoch IoU: {valid_metrics['iou']:.4f}")
         print('-' * 50)
 
-    save_model(EPOCHS, model, optimizer, criterion, out_dir)
+        wandb.log({
+            "train_loss": train_epoch_loss,
+            "train_dice": train_metrics['dice'],
+            "train_iou": train_metrics['iou'],
+            "valid_loss": valid_epoch_loss,
+            "valid_dice": valid_metrics['dice'],
+            "valid_iou": valid_metrics['iou']
+        })
+
+    save_model(config.EPOCHS, model, optimizer, criterion, out_dir)
     # Save the loss and accuracy plots.
     save_plots(
         train_metrics_all, valid_metrics_all, train_loss, valid_loss, out_dir
