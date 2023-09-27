@@ -8,7 +8,7 @@ import wandb
 from datasets import get_images, get_dataset, get_data_loaders
 from engine import train, validate
 from model import prepare_model
-import config_360 as config
+import config as config
 from utils import save_model, SaveBestModel, save_plots, get_save_path
 
 

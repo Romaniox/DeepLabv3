@@ -121,13 +121,6 @@ class SegmentationDataset(Dataset):
         image = transformed['image']
         mask = transformed['mask']
 
-        if mask.max() != 0:
-            pass
-
-
-        # cv2.imwrite('image.png', cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
-        # cv2.imwrite('mask.png', mask)
-
         image = self.norm_tfms(image=image)['image']
 
         # Get colored label mask.
